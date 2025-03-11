@@ -8,7 +8,7 @@ class Linear():
         self.weight = np.random.normal(0, 3, (self.input, self.output))
         self.batch = batch
 
-    def forward(self, dataset, y):
+    def forward(self, dataset):
         total_samples = len(dataset)
         y_preds = np.zeros((total_samples, self.output,))
 
@@ -48,19 +48,22 @@ def main():
     output_dim = 1
     batch_size = 64
     learning_rate = 0.01
-    epochs = 1000
+    epochs = 100
 
     # weight
     fc = Linear(input_dim, hidden_dim, batch_size)
-
+    fc2 = Linear(hidden_dim, output_dim, batch_size)
     for i in range(epochs):
 
         # feed forward
         # z = x * w
-        z_l = fc.forward(iris_data, y)
+        z_l = fc.forward(iris_data)
         a_l = sigmoid(z_l)
 
-        error = mse(a_l, y)
+        z_l2 = fc2.forward(a_l)
+        a_l2 = sigmoid(z_l2)
+
+        error = mse(a_l2, y)
 
         # back propagation
         # grad(Cost)/grad(w_L) = grad(z_L) / grad(w_L) * grad(a_L) / grad(z_L) * grad(Cost) / grad(a_L)
@@ -75,10 +78,13 @@ def main():
         #                    y -> Cost
         #
         # w_L = a_L-1 @ (sigma_grad(z_L) * cost_grad)
+        loss_grad2 = np.sum(mse_grad(a_l2, y), axis=1, keepdims=True) / 150
 
-        fc.back_propagation(learning_rate, np.sum(mse_grad(a_l, y), axis=1, keepdims=True), iris_data, z_l)
+        fc2.back_propagation(learning_rate, loss_grad2, a_l, z_l2)
 
-        if i % 100 == 0:
+        fc.back_propagation(learning_rate, fc2.weight.T, iris_data, z_l)
+
+        if i % 5 == 0:
             print(f"Epoch: {i}, Loss: {np.mean(error)}")
 
 
